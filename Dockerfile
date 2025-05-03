@@ -1,4 +1,8 @@
 # syntax = docker/dockerfile:1.4
+<<<<<<< Updated upstream
+=======
+# Dockerfile
+>>>>>>> Stashed changes
 
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9-slim AS builder
 

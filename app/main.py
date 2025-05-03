@@ -1,3 +1,7 @@
+<<<<<<< Updated upstream
+=======
+# main.py
+>>>>>>> Stashed changes
 from fastapi import FastAPI
 
 app = FastAPI()
