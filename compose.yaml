@@ -1,7 +1,4 @@
-<<<<<<< Updated upstream
-=======
 # compose.yaml
->>>>>>> Stashed changes
 services:
   api:
     build:
