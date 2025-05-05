@@ -1,6 +1,46 @@
-# Environment files
+# ───── Global ─────
+
 .env
 .env.*
 
-# Byte-compiled / optimized / DLL files
+# Python cache
 backend/app/__pycache__/
+
+# macOS
+.DS_Store
+
+# ───── Frontend: Next.js + Node ─────
+
+# dependencies
+frontend/node_modules
+frontend/.pnp
+frontend/.pnp.*
+frontend/.yarn/*
+!frontend/.yarn/patches
+!frontend/.yarn/plugins
+!frontend/.yarn/releases
+!frontend/.yarn/versions
+
+# testing
+frontend/coverage
+
+# next.js build
+frontend/.next/
+frontend/out/
+
+# production
+frontend/build
+
+# debug
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# env files
+frontend/.env*
+frontend/tsconfig.tsbuildinfo
+frontend/next-env.d.ts
+
+# vercel
+frontend/.vercel

@@ -118,4 +118,4 @@ project-root/
 
 ## 📜 License
 
-MIT © Healthgen, Inc.
+MIT © Healthgen
