@@ -27,6 +27,7 @@ frontend/coverage
 # next.js build
 frontend/.next/
 frontend/out/
+frontend/package-lock.json
 
 # production
 frontend/build
