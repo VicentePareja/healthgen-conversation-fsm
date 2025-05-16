@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 # Importa los modelos
-from app.models import Base  # Asegurate que este import funcione
+from app.database import Base  
 
 # Alembic Config object
 config = context.config
