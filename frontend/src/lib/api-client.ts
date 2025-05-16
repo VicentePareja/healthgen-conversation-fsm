@@ -30,21 +30,21 @@ class ApiClient {
   }
 
   async getChats(): Promise<Chat[]> {
-    return this.request<Chat[]>("/chats")
+    return this.request<Chat[]>("/chats/")
   }
 
   async createChat(): Promise<Chat> {
-    return this.request<Chat>("/chats", {
+    return this.request<Chat>("/chats/", {
       method: "POST",
     })
   }
 
   async getChatMessages(chatId: number): Promise<Message[]> {
-    return this.request<Message[]>(`/chats/${chatId}/messages`)
+    return this.request<Message[]>(`/chats/${chatId}/messages/`)
   }
 
   async sendMessage(chatId: number, message: { role: string; content: string }): Promise<Message> {
-    return this.request<Message>(`/chats/${chatId}/messages`, {
+    return this.request<Message>(`/chats/${chatId}/messages/`, {
       method: "POST",
       body: JSON.stringify(message),
     })
