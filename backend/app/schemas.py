@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Dict, Any
 
 class Item(BaseModel):
     id: int
@@ -34,6 +34,14 @@ class Message(MessageBase):
     id: int
     chat_id: int
     timestamp: datetime
+
+    class Config:
+        orm_mode = True
+
+class ConversationState(BaseModel):
+    chat_id: int
+    state_name: str
+    payload: Dict[str, Any]
 
     class Config:
         orm_mode = True
