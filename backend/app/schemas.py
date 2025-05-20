@@ -1,5 +1,4 @@
 # backend/app/schemas.py
-
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Literal, Dict, Any
@@ -45,3 +44,7 @@ class ConversationState(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ConversationReply(BaseModel):
+    text: str

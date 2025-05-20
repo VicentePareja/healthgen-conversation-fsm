@@ -36,3 +36,11 @@ class IMessageRepository(ABC):
         Lanza ChatNotFoundError si el chat no existe.
         """
         ...
+
+class ISlotRepository(ABC):
+    @abstractmethod
+    def get_next_slots(self, days: int, per_day: int) -> List[str]:
+        """
+        Return up to `per_day` ISO-timestamp slots for each of the next `days` days.
+        """
+        ...
