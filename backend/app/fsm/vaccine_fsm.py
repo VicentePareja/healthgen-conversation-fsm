@@ -25,14 +25,10 @@ class VaccineConversation:
     ]
 
     def __init__(self, payload: dict | None = None, slot_repo=None):
-        # persistent data across the flow
         self.payload = payload or {}
-        # initial state
         self.state = "start"
-
         self.slot_repo = slot_repo or InMemorySlotRepository()
 
-        # build the state machine
         self.machine = Machine(
             model=self,
             states=VaccineConversation.states,
@@ -41,20 +37,31 @@ class VaccineConversation:
             auto_transitions=False,
         )
 
-        # transitions
+        # 1) Name → got_name
         self.machine.add_transition(
             trigger="provide_name",
             source="start",
             dest="got_name",
             before="set_name",
         )
+
+        # 2) Age → got_age, then fire ask_allergy trigger
         self.machine.add_transition(
             trigger="provide_age",
             source="got_name",
             dest="got_age",
             before="set_age",
-            after="ask_allergy",            # immediately ask allergy after age
+            after="ask_allergy",      # this is the *trigger* we're about to define
         )
+
+        # 3) Proper trigger to move from got_age → asked_allergy
+        self.machine.add_transition(
+            trigger="ask_allergy",
+            source="got_age",
+            dest="asked_allergy",
+        )
+
+        # 4) Allergy answer → ineligible or eligible
         self.machine.add_transition(
             trigger="answer_allergy",
             source="asked_allergy",
@@ -68,19 +75,25 @@ class VaccineConversation:
             dest="eligible",
             conditions="is_allergic_false",
             before="set_allergy",
-            after="offer_slots",           # eligible → go offer slots
+            after="offer_slots",      # now we move to offered_slots
         )
+
+        # 5) Slot selection → awaiting_selection
         self.machine.add_transition(
             trigger="select_slot",
             source="offered_slots",
             dest="awaiting_selection",
             before="set_selected_slot",
         )
+
+        # 6) Confirm choice → confirming
         self.machine.add_transition(
             trigger="confirm",
             source="awaiting_selection",
             dest="confirming",
         )
+
+        # 7) Finish booking → completed or back to offered_slots
         self.machine.add_transition(
             trigger="finish_yes",
             source="confirming",
@@ -92,24 +105,17 @@ class VaccineConversation:
             dest="offered_slots",
         )
 
+
     # ─── CALLBACKS & CONDITIONS ─────────────────────────────────────────────────
 
     def set_name(self, event):
-        name = event.kwargs.get("name", "").strip()
-        self.payload["name"] = name
+        self.payload["name"] = event.kwargs.get("name", "").strip()
 
     def set_age(self, event):
-        age = event.kwargs.get("age")
-        # normalize to int
-        self.payload["age"] = int(age)
-
-    def ask_allergy(self, event):
-        # transition into asked_allergy
-        self.to_asked_allergy()
+        self.payload["age"] = int(event.kwargs.get("age"))
 
     def set_allergy(self, event):
         answer = event.kwargs.get("allergy")
-        # normalize yes/no
         self.payload["allergy"] = str(answer).lower() in ["yes", "y", "true"]
 
     def is_allergic_true(self, event) -> bool:
@@ -119,18 +125,16 @@ class VaccineConversation:
         return str(event.kwargs.get("allergy")).lower() in ["no", "n", "false"]
 
     def offer_slots(self, event):
-        # generate next 3 days × 3 times
+        # fetch next 3 days × 3 slots/day
         slots = self.slot_repo.get_next_slots(days=3, per_day=3)
         self.payload["slots"] = slots
-        # move to offered_slots state
+        # transition into offered_slots
         self.to_offered_slots()
 
     def set_selected_slot(self, event):
-        choice = event.kwargs.get("choice")
-        idx = int(choice) - 1
+        choice = int(event.kwargs.get("choice"))
         slots = self.payload.get("slots", [])
-        if 0 <= idx < len(slots):
-            self.payload["selected_slot"] = slots[idx]
+        if 1 <= choice <= len(slots):
+            self.payload["selected_slot"] = slots[choice - 1]
         else:
-            # invalid choice; leave payload untouched
             self.payload["selected_slot"] = None
