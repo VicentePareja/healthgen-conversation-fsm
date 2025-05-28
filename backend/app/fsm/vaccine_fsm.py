@@ -13,6 +13,7 @@ class VaccineConversation:
 
     states = [
         State(name="start"),
+        State(name="awaiting_intent"),
         State(name="got_name"),
         State(name="got_age"),
         State(name="asked_allergy"),
@@ -22,6 +23,8 @@ class VaccineConversation:
         State(name="awaiting_selection"),
         State(name="confirming"),
         State(name="completed"),
+        State(name="abort"),
+        State(name="fallback"),
     ]
 
     def __init__(self, payload: dict | None = None, slot_repo=None):
@@ -29,39 +32,65 @@ class VaccineConversation:
         self.state = "start"
         self.slot_repo = slot_repo or InMemorySlotRepository()
 
+        # ignore_invalid_triggers lets us call e.g. early_cancel()
         self.machine = Machine(
             model=self,
             states=VaccineConversation.states,
             initial="start",
             send_event=True,
             auto_transitions=False,
+            ignore_invalid_triggers=True,
         )
 
-        # 1) Name → got_name
+        # ─── Intent ───────────────────────────────────────────────────────────────
+        self.machine.add_transition(
+            trigger="ask_intent",
+            source="start",
+            dest="awaiting_intent",
+        )
+        self.machine.add_transition(
+            trigger="affirm_intent",
+            source="awaiting_intent",
+            dest="got_name",
+        )
+        self.machine.add_transition(
+            trigger="deny_intent",
+            source="awaiting_intent",
+            dest="abort",
+        )
+        self.machine.add_transition(
+            trigger="unclear_intent",
+            source="awaiting_intent",
+            dest="fallback",
+        )
+
+        # ─── Name ─────────────────────────────────────────────────────────────────
         self.machine.add_transition(
             trigger="provide_name",
-            source="start",
-            dest="got_name",
-            before="set_name",
-        )
-
-        # 2) Age → got_age, then fire ask_allergy trigger
-        self.machine.add_transition(
-            trigger="provide_age",
             source="got_name",
             dest="got_age",
-            before="set_age",
-            after="ask_allergy",      # this is the *trigger* we're about to define
+            before="set_name",
+        )
+        self.machine.add_transition(
+            trigger="invalid_name",
+            source="got_name",
+            dest="fallback",
         )
 
-        # 3) Proper trigger to move from got_age → asked_allergy
+        # ─── Age & Ask Allergy ────────────────────────────────────────────────────
         self.machine.add_transition(
-            trigger="ask_allergy",
+            trigger="provide_age",
             source="got_age",
             dest="asked_allergy",
+            before="set_age",
+        )
+        self.machine.add_transition(
+            trigger="invalid_age",
+            source="got_age",
+            dest="fallback",
         )
 
-        # 4) Allergy answer → ineligible or eligible
+        # ─── Allergy Answer ───────────────────────────────────────────────────────
         self.machine.add_transition(
             trigger="answer_allergy",
             source="asked_allergy",
@@ -75,25 +104,44 @@ class VaccineConversation:
             dest="eligible",
             conditions="is_allergic_false",
             before="set_allergy",
-            after="offer_slots",      # now we move to offered_slots
+            after="offer_slots",
+        )
+        self.machine.add_transition(
+            trigger="unclear_allergy",
+            source="asked_allergy",
+            dest="fallback",
         )
 
-        # 5) Slot selection → awaiting_selection
+        # ─── Slot Selection ──────────────────────────────────────────────────────
+        # (offer_slots itself will call to_offered_slots())
         self.machine.add_transition(
             trigger="select_slot",
             source="offered_slots",
             dest="awaiting_selection",
+            conditions="is_valid_slot",
             before="set_selected_slot",
         )
+        self.machine.add_transition(
+            trigger="select_slot",
+            source="offered_slots",
+            dest="offered_slots",
+            unless="is_valid_slot",
+            before="set_selected_slot",
+        )
+        self.machine.add_transition(
+            trigger="invalid_slot",
+            source="offered_slots",
+            dest="fallback",
+        )
 
-        # 6) Confirm choice → confirming
+        # ─── Confirmation ────────────────────────────────────────────────────────
         self.machine.add_transition(
             trigger="confirm",
             source="awaiting_selection",
             dest="confirming",
         )
 
-        # 7) Finish booking → completed or back to offered_slots
+        # ─── Finish Booking ───────────────────────────────────────────────────────
         self.machine.add_transition(
             trigger="finish_yes",
             source="confirming",
@@ -104,7 +152,23 @@ class VaccineConversation:
             source="confirming",
             dest="offered_slots",
         )
+        self.machine.add_transition(
+            trigger="reopen_slots",
+            source="confirming",
+            dest="offered_slots",
+        )
 
+        # ─── Early Cancel & Fallback ──────────────────────────────────────────────
+        self.machine.add_transition(
+            trigger="early_cancel",
+            source="*",
+            dest="abort",
+        )
+        self.machine.add_transition(
+            trigger="restart_after_fallback",
+            source="fallback",
+            dest="start",
+        )
 
     # ─── CALLBACKS & CONDITIONS ─────────────────────────────────────────────────
 
@@ -125,10 +189,8 @@ class VaccineConversation:
         return str(event.kwargs.get("allergy")).lower() in ["no", "n", "false"]
 
     def offer_slots(self, event):
-        # fetch next 3 days × 3 slots/day
         slots = self.slot_repo.get_next_slots(days=3, per_day=3)
         self.payload["slots"] = slots
-        # transition into offered_slots
         self.to_offered_slots()
 
     def set_selected_slot(self, event):
@@ -138,3 +200,11 @@ class VaccineConversation:
             self.payload["selected_slot"] = slots[choice - 1]
         else:
             self.payload["selected_slot"] = None
+
+    def is_valid_slot(self, event) -> bool:
+        try:
+            idx = int(event.kwargs.get("choice")) - 1
+            slots = self.payload.get("slots", [])
+            return 0 <= idx < len(slots)
+        except Exception:
+            return False

@@ -20,6 +20,21 @@ def dynamic_completion(context: Any, agent: Any) -> str:
     slot = context.context.payload.get("selected_slot")
     return f"Your appointment is confirmed at {slot}. Thank you!"
 
+def dynamic_offer_slots(context: Any, agent: Any) -> str:
+    """
+    Enumerate context.context.payload['slots'] and prompt for a numeric choice.
+    """
+    slots = context.context.payload.get("slots", [])
+    if not slots:
+        return "I’m sorry, no slots are available right now."
+    lines = [f"{i+1}) {slot}" for i, slot in enumerate(slots)]
+    return (
+        "Here are the available appointment slots:\n\n"
+        + "\n".join(lines)
+        + f"\n\nPlease choose a slot by its number (1–{len(slots)}). "
+          "Only respond with the number; if it’s invalid, I will show these again."
+    )
+
 STATE_INSTRUCTIONS: Dict[str, Union[str, Callable[..., str]]] = {
     "start": (
         "You are a friendly assistant. Ask the user for their full name (first and last). "
@@ -57,11 +72,7 @@ STATE_INSTRUCTIONS: Dict[str, Union[str, Callable[..., str]]] = {
         "If the input is not a valid option, say: 'Please choose a number between 1 and {len(context.context.payload['slots'])}.'"
     ),
 
-    "offered_slots": (
-        "You are a friendly assistant. If the user asks again for options, re-enumerate the slots from context.payload['slots'] "
-        "and remind them to pick a number. "
-        "Only call select_slot on a clear valid number."
-    ),
+    "offered_slots": dynamic_offer_slots,
 
     "awaiting_selection": (
         "You are a friendly assistant. The user has picked a slot number. Call the confirm_selection tool now. "
