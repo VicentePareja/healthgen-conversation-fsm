@@ -1,6 +1,9 @@
+# backend/app/main.py
+
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from . import database, models, crud, schemas
+import pydantic
 from .api.chat import router as chat_router
 
 app = FastAPI()

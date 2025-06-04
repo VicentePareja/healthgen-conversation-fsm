@@ -1,8 +1,7 @@
 # backend/app/schemas.py
-
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Dict, Any
 
 class Item(BaseModel):
     id: int
@@ -37,3 +36,15 @@ class Message(MessageBase):
 
     class Config:
         orm_mode = True
+
+class ConversationState(BaseModel):
+    chat_id: int
+    state_name: str
+    payload: Dict[str, Any]
+
+    class Config:
+        orm_mode = True
+
+
+class ConversationReply(BaseModel):
+    text: str
