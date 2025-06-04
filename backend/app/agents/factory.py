@@ -12,6 +12,7 @@ from app.agents.tools import (
     invalid_name,
     provide_age,
     invalid_age,
+    ask_allergy,
     answer_allergy,
     unclear_allergy,
     select_slot,
@@ -24,13 +25,13 @@ from app.agents.tools import (
 from app.agents.config import MODEL_NAME, DEFAULT_MODEL_SETTINGS
 from app.agents.instructions import STATE_INSTRUCTIONS
 
-# Map each state to its allowed tools
 TOOLS_MAP: dict[str, list] = {
     "start":              [ask_intent],
     "awaiting_intent":    [affirm_intent, deny_intent, unclear_intent],
-    "got_name":           [provide_name, invalid_name],
-    "got_age":            [provide_age, invalid_age],
-    "asked_allergy":      [answer_allergy, unclear_allergy],
+    "asked_name":         [provide_name, invalid_name],
+    "got_name":           [provide_age, invalid_age],
+    "got_age":            [ask_allergy],                   
+    "awaiting_allergy_response": [answer_allergy, unclear_allergy],
     "eligible":           [select_slot],
     "offered_slots":      [select_slot, invalid_slot],
     "awaiting_selection": [confirm_selection],

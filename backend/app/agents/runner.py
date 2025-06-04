@@ -80,14 +80,12 @@ class ConversationRunner:
 
         # 4) Build full chat-completion messages
         messages = []
-        messages.extend(history)                           # all past turns
-        messages.append({"role": "system",  "content": instr})
-        messages.append({"role": "user",    "content": user_text})
+        messages.extend(history)       
 
-        logging.info(f"[Full Prompt] {messages!r}")
+        logging.info(f"[message historial] {messages!r}")
 
         # 5) Run via Runner — which will invoke tools, etc.
-        coro = self.runner.run(agent, messages, context=conv)
+        coro = self.runner.run(agent, messages, context=conv, max_turns=50)
         loop = asyncio.new_event_loop()
         try:
             result = loop.run_until_complete(coro)
@@ -96,6 +94,6 @@ class ConversationRunner:
 
         out = getattr(result, "final_output", None) or getattr(result, "output", "")
         text = getattr(out, "text", str(out))
-        logging.info(f"[Bot] {text!r}")
+        logging.info(f"[Bot ({agent.name})] {text!r}")
 
         return out

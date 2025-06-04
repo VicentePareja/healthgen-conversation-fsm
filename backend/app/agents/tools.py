@@ -1,5 +1,6 @@
 # backend/app/agents/tools.py
-
+import logging
+from functools import wraps
 from agents import function_tool, RunContextWrapper
 from app.fsm.vaccine_fsm import VaccineConversation
 
@@ -12,6 +13,7 @@ def ask_intent(
     """
     After greeting, ask the user whether they want to schedule a vaccination.
     """
+    logging.info("[Tool] ask_intent called")
     conv: VaccineConversation = context.context
     conv.ask_intent()
     return conv.payload
@@ -23,6 +25,7 @@ def affirm_intent(
     """
     User said 'yes' to scheduling.
     """
+    logging.info("[Tool] affirm_intent called")
     conv: VaccineConversation = context.context
     conv.affirm_intent()
     return conv.payload
@@ -34,6 +37,7 @@ def deny_intent(
     """
     User said 'no' to scheduling.
     """
+    logging.info("[Tool] deny_intent called")
     conv: VaccineConversation = context.context
     conv.deny_intent()
     return conv.payload
@@ -45,6 +49,7 @@ def unclear_intent(
     """
     User response was not a clear yes/no.
     """
+    logging.info("[Tool] unclear_intent called")
     conv: VaccineConversation = context.context
     conv.unclear_intent()
     return conv.payload
@@ -60,6 +65,7 @@ def provide_name(
     """
     Stores the user's full name.
     """
+    logging.info("[Tool] provide_name called")
     conv: VaccineConversation = context.context
     conv.provide_name(name=name)
     return conv.payload
@@ -71,6 +77,7 @@ def invalid_name(
     """
     Name not recognised; trigger fallback.
     """
+    logging.info("[Tool] invalid_name called")
     conv: VaccineConversation = context.context
     conv.invalid_name()
     return conv.payload
@@ -86,6 +93,7 @@ def provide_age(
     """
     Stores the user's age.
     """
+    logging.info("[Tool] provide_age called")
     conv: VaccineConversation = context.context
     conv.provide_age(age=age)
     return conv.payload
@@ -97,6 +105,7 @@ def invalid_age(
     """
     Age input invalid; trigger fallback.
     """
+    logging.info("[Tool] invalid_age called")
     conv: VaccineConversation = context.context
     conv.invalid_age()
     return conv.payload
@@ -112,6 +121,7 @@ def answer_allergy(
     """
     Records egg‐allergy yes/no.
     """
+    logging.info("[Tool] answer_allergy called")
     conv: VaccineConversation = context.context
     conv.answer_allergy(allergy=allergy)
     return conv.payload
@@ -123,6 +133,7 @@ def unclear_allergy(
     """
     Allergy answer ambiguous; trigger fallback.
     """
+    logging.info("[Tool] unclear_allergy called")
     conv: VaccineConversation = context.context
     conv.unclear_allergy()
     return conv.payload
@@ -138,6 +149,7 @@ def select_slot(
     """
     User picks one of the offered slots.
     """
+    logging.info(f"[Tool] select_slot called with choice={choice}")
     conv: VaccineConversation = context.context
     conv.select_slot(choice=choice)
     return {"selected_slot": conv.payload.get("selected_slot")}
@@ -149,6 +161,7 @@ def invalid_slot(
     """
     Slot choice invalid; trigger fallback.
     """
+    logging.info("[Tool] invalid_slot called")
     conv: VaccineConversation = context.context
     conv.invalid_slot()
     return conv.payload
@@ -163,6 +176,7 @@ def confirm_selection(
     """
     Move into the confirming state.
     """
+    logging.info("[Tool] confirm_selection called")
     conv: VaccineConversation = context.context
     conv.confirm()
     return conv.payload
@@ -178,6 +192,7 @@ def finish_booking(
     """
     Finalize or reopen slots based on yes/no.
     """
+    logging.info(f"[Tool] finish_booking called with yes={yes}")
     conv: VaccineConversation = context.context
     if yes:
         conv.finish_yes()
@@ -195,6 +210,7 @@ def early_cancel(
     """
     User cancels at any point.
     """
+    logging.info("[Tool] early_cancel called")
     conv: VaccineConversation = context.context
     conv.early_cancel()
     return conv.payload
@@ -206,6 +222,19 @@ def restart_after_fallback(
     """
     After a fallback reprompt, restart the flow (or hook in prev‐state logic later).
     """
+    logging.info("[Tool] restart_after_fallback called")
     conv: VaccineConversation = context.context
     conv.restart_after_fallback()
+    return conv.payload
+
+@function_tool
+def ask_allergy(
+    context: RunContextWrapper[VaccineConversation],
+) -> dict:
+    """
+    After we have the age, ask the user about egg allergy.
+    """
+    logging.info("[Tool] ask_allergy called")
+    conv: VaccineConversation = context.context
+    conv.ask_allergy()
     return conv.payload

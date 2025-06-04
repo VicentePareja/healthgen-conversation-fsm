@@ -14,9 +14,10 @@ class VaccineConversation:
     states = [
         State(name="start"),
         State(name="awaiting_intent"),
+        State(name="asked_name"),
         State(name="got_name"),
         State(name="got_age"),
-        State(name="asked_allergy"),
+        State(name="awaiting_allergy_response"),
         State(name="eligible"),
         State(name="ineligible"),
         State(name="offered_slots"),
@@ -51,7 +52,7 @@ class VaccineConversation:
         self.machine.add_transition(
             trigger="affirm_intent",
             source="awaiting_intent",
-            dest="got_name",
+            dest="asked_name",
         )
         self.machine.add_transition(
             trigger="deny_intent",
@@ -67,22 +68,30 @@ class VaccineConversation:
         # ─── Name ─────────────────────────────────────────────────────────────────
         self.machine.add_transition(
             trigger="provide_name",
-            source="got_name",
-            dest="got_age",
+            source="asked_name",            
+            dest="got_name",
             before="set_name",
         )
         self.machine.add_transition(
             trigger="invalid_name",
-            source="got_name",
+            source="asked_name",
             dest="fallback",
         )
 
         # ─── Age & Ask Allergy ────────────────────────────────────────────────────
+        # after provide_age → got_age
         self.machine.add_transition(
             trigger="provide_age",
-            source="got_age",
-            dest="asked_allergy",
+            source="got_name",
+            dest="got_age",
             before="set_age",
+        )
+
+        # then this ask_allergy trigger
+        self.machine.add_transition(
+            trigger="ask_allergy",
+            source="got_age",
+            dest="awaiting_allergy_response",
         )
         self.machine.add_transition(
             trigger="invalid_age",
@@ -93,14 +102,14 @@ class VaccineConversation:
         # ─── Allergy Answer ───────────────────────────────────────────────────────
         self.machine.add_transition(
             trigger="answer_allergy",
-            source="asked_allergy",
+            source="awaiting_allergy_response",
             dest="ineligible",
             conditions="is_allergic_true",
             before="set_allergy",
         )
         self.machine.add_transition(
             trigger="answer_allergy",
-            source="asked_allergy",
+            source="awaiting_allergy_response",
             dest="eligible",
             conditions="is_allergic_false",
             before="set_allergy",
@@ -108,7 +117,7 @@ class VaccineConversation:
         )
         self.machine.add_transition(
             trigger="unclear_allergy",
-            source="asked_allergy",
+            source="awaiting_allergy_response",
             dest="fallback",
         )
 
