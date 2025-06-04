@@ -10,17 +10,6 @@ This project demonstrates a three-tier application using Docker Compose:
 2. **Database**: PostgreSQL container seeded with initial data.
 3. **Frontend**: Next.js (TSX) chatbot prototype served by Nginx or run locally for development.
 
-## ✅ Features
-
-* **API Endpoints**
-
-  * `GET /hello` – Returns a greeting message.
-  * `GET /items` – Returns seeded records from the database.
-* **Chatbot UI (TSX)**
-
-  * Simple mock FSM logic responding to user inputs.
-  * Interactive message options and auto-scrolling.
-
 ## 🛠️ Tech Stack
 
 | Tier          | Technology                                                                 |
@@ -87,12 +76,13 @@ project-root/
    ```ini
    POSTGRES_USER=postgres
    POSTGRES_PASSWORD=postgres
-   POSTGRES_DB=healthgen
+   POSTGRES_DB=your-db-name
    DB_PORT=15432
 
-   DATABASE_URL=postgresql://postgres:postgres@db:5432/healthgen
+   DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
    API_PORT=8000
    WEB_PORT=3000
+   OPENAI_API_KEY=your-opeai-key
    ```
 
 3. **Build and start services**
