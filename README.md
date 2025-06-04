@@ -97,7 +97,7 @@ project-root/
 
 * **Chatbot UI**
 
-  Open your browser at [http://localhost:3000](http://localhost:3000) to see the TSX-based chatbot UI.
+  Open your browser at [http://localhost:3000](http://localhost:3000) to see the chatbot UI.
 
 ## 📈 Next Steps
 
